@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "836115054436",
+    "firebase_url": "https://dpharma-notes-default-rtdb.firebaseio.com",
+    "project_id": "dpharma-notes",
+    "storage_bucket": "dpharma-notes.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:836115054436:android:8ed007bf9a734b74214471",
+        "android_client_info": {
+          "package_name": "com.example.d_pharma_notes_admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLb_67QD8o7hcCmKbTfideH-P-lfvrLw8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:836115054436:android:252e71d7654895d1214471",
+        "android_client_info": {
+          "package_name": "com.notekarts.dpharma"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLb_67QD8o7hcCmKbTfideH-P-lfvrLw8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
