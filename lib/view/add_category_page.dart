@@ -1,3 +1,5 @@
+//
+// import 'package:d_pharma_notes_admin/view/Add_data.dart';
 // import 'package:flutter/material.dart';
 // import 'package:firebase_database/firebase_database.dart';
 //
@@ -56,8 +58,13 @@
 //
 //   /// Add Category to Firebase
 //   Future<void> addCategory(String name, String image) async {
-//     String categoryId = database.child("category").push().key!;
-//     await database.child("category/$categoryId").set({"name": name, "image": image});
+//     String? categoryId = database.child("category").push().key;
+//     if (categoryId != null) {
+//       await database.child("category/$categoryId").set({
+//         "name": name,
+//         "image": image,
+//       });
+//     }
 //   }
 //
 //   /// Open Subcategory Dialog
@@ -81,12 +88,18 @@
 //
 //   /// Add Subcategory to Firebase
 //   Future<void> addSubCategory(String categoryId, String name, String image) async {
-//     String subCategoryId = database.child("category/$categoryId/subcategory").push().key!;
-//     await database.child("category/$categoryId/subcategory/$subCategoryId").set({"name": name, "image": image});
+//     String? subCategoryId = database.child("category/$categoryId/subcategory").push().key;
+//     if (subCategoryId != null) {
+//       await database.child("category/$categoryId/subcategory/$subCategoryId").set({
+//         "name": name,
+//         "image": image,
+//       });
+//     }
 //   }
 //
 //   /// Open Sub-Subcategory Dialog
 //   void openSubSubCategoryDialog() {
+//     clearControllers();
 //     openDialog(
 //       title: "Add Sub-Subcategory",
 //       fields: [
@@ -107,30 +120,31 @@
 //           );
 //           clearControllers();
 //           Navigator.pop(context);
+//         } else {
+//           ScaffoldMessenger.of(context).showSnackBar(
+//             const SnackBar(content: Text("Please select a subcategory and fill ")),
+//           );
 //         }
 //       },
 //     );
 //   }
-//
-//
 //   void clearControllers() {
 //     nameController.clear();
 //     imageController.clear();
 //     pdfLinkController.clear();
 //     descriptionController.clear();
-//     selectedCategoryId = null;
-//     selectedSubCategoryId = null;
-//     setState(() {});
 //   }
 //
 //   /// Add Sub-Subcategory to Firebase
 //   Future<void> addSubSubCategory(String categoryId, String subCategoryId, String name, String pdfLink, String description) async {
-//     String subSubCategoryId = database.child("category/$categoryId/subcategory/$subCategoryId/sub_subcategory").push().key!;
-//     await database.child("category/$categoryId/subcategory/$subCategoryId/sub_subcategory/$subSubCategoryId").set({
-//       "name": name,
-//       "description": description,
-//       "link": pdfLink,
-//     });
+//     String? subSubCategoryId = database.child("category/$categoryId/subcategory/$subCategoryId/sub_subcategory").push().key;
+//     if (subSubCategoryId != null) {
+//       await database.child("category/$categoryId/subcategory/$subCategoryId/sub_subcategory/$subSubCategoryId").set({
+//         "name": name,
+//         "description": description,
+//         "link": pdfLink,
+//       });
+//     }
 //   }
 //
 //   /// Build Category Dropdown
@@ -142,20 +156,22 @@
 //           return const Text("No categories found");
 //         }
 //
-//         Map<dynamic, dynamic> categories = Map<dynamic, dynamic>.from(
-//             snapshot.data!.snapshot.value as Map<dynamic, dynamic>);
+//         var data = snapshot.data!.snapshot.value as Map<dynamic, dynamic>? ?? {};
 //
-//         List<DropdownMenuItem<String>> categoryItems = categories.keys
-//             .map<DropdownMenuItem<String>>((categoryId) {
+//         // Convert the map to a list of dropdown items
+//         List<DropdownMenuItem<String>> categoryItems = data.keys.map<DropdownMenuItem<String>>((categoryId) {
 //           return DropdownMenuItem(
 //             value: categoryId,
-//             child: Text(categories[categoryId]["name"]),
+//             child: Text(data[categoryId]["name"] ?? "Unknown"),
 //           );
 //         }).toList();
 //
-//         if (selectedCategoryId != null && !categories.keys.contains(selectedCategoryId)) {
+//         // If the selected value is no longer valid, reset it
+//         if (selectedCategoryId != null && !data.keys.contains(selectedCategoryId)) {
 //           selectedCategoryId = null;
 //         }
+//
+//
 //
 //         return StatefulBuilder(
 //           builder: (context, setDialogState) {
@@ -166,45 +182,56 @@
 //               onChanged: (value) {
 //                 setDialogState(() {
 //                   selectedCategoryId = value;
-//                   selectedSubCategoryId = null;
+//                   selectedSubCategoryId = null; // Reset subcategory
 //                 });
+//                 setState(() {}); // Ensure entire UI updates
 //               },
 //             );
 //           },
 //         );
+//
 //       },
 //     );
 //   }
 //
+//
+//
 //   /// Build Subcategory Dropdown
+//
+//
+//
 //   Widget buildSubCategoryDropdown() {
 //     return StreamBuilder<DatabaseEvent>(
-//       stream: selectedCategoryId == null
-//           ? const Stream.empty()
-//           : database.child("category/$selectedCategoryId/subcategory").onValue,
-//       builder: (context, snapshot) {
-//         if (selectedCategoryId == null) {
-//           return const Text("Select category first");
+//       stream: database.child("category").onValue,
+//       builder: (context, categorySnapshot) {
+//         if (!categorySnapshot.hasData || categorySnapshot.data!.snapshot.value == null) {
+//           return const Text("No categories found");
 //         }
 //
-//         if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
+//         var categoryData = categorySnapshot.data!.snapshot.value as Map<dynamic, dynamic>? ?? {};
+//         Map<String, String> allSubCategories = {};
+//
+//         // Iterate through each category to fetch subcategories
+//         categoryData.forEach((categoryId, categoryValue) {
+//           if (categoryValue["subcategory"] != null) {
+//             (categoryValue["subcategory"] as Map<dynamic, dynamic>).forEach((subCategoryId, subCategoryValue) {
+//               if (subCategoryValue["name"] != null && subCategoryValue["name"].toString().trim().isNotEmpty) {
+//                 allSubCategories[subCategoryId] = subCategoryValue["name"];
+//               }
+//             });
+//           }
+//         });
+//
+//         if (allSubCategories.isEmpty) {
 //           return const Text("No subcategories found");
 //         }
 //
-//         Map<dynamic, dynamic> subcategories = Map<dynamic, dynamic>.from(
-//             snapshot.data!.snapshot.value as Map<dynamic, dynamic>);
-//
-//         List<DropdownMenuItem<String>> subCategoryItems = subcategories.keys
-//             .map<DropdownMenuItem<String>>((subCategoryId) {
+//         List<DropdownMenuItem<String>> subCategoryItems = allSubCategories.keys.map<DropdownMenuItem<String>>((subCategoryId) {
 //           return DropdownMenuItem(
 //             value: subCategoryId,
-//             child: Text(subcategories[subCategoryId]["name"]),
+//             child: Text(allSubCategories[subCategoryId] ?? "Unknown"),
 //           );
 //         }).toList();
-//
-//         if (selectedSubCategoryId != null && !subcategories.keys.contains(selectedSubCategoryId)) {
-//           selectedSubCategoryId = null;
-//         }
 //
 //         return StatefulBuilder(
 //           builder: (context, setDialogState) {
@@ -216,6 +243,7 @@
 //                 setDialogState(() {
 //                   selectedSubCategoryId = value;
 //                 });
+//                 setState(() {}); // Ensure entire UI updates
 //               },
 //             );
 //           },
@@ -224,17 +252,20 @@
 //     );
 //   }
 //
+//
 //   @override
 //   Widget build(BuildContext context) {
-//
-//
 //     return Scaffold(
-//       appBar: AppBar(title: const Text("Manage Categories")),
+//       appBar: AppBar(title: Text("Manage Categories"),
+//         backgroundColor: Colors.blueGrey,
+//         centerTitle: true,),
+//
 //       body: Padding(
 //         padding: const EdgeInsets.all(12.0),
 //         child: Center(
 //           child: Card(
 //             elevation: 3,
+//             //color: Colors.blueGrey,
 //             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
 //             child: Padding(
 //               padding: const EdgeInsets.all(16.0),
@@ -259,15 +290,15 @@
 //                     child: const Text("Add Category"),
 //                   ),
 //                   const SizedBox(height: 10),
-//                   ElevatedButton(
-//                     onPressed: openSubCategoryDialog,
-//                     child: const Text("Add Subcategory"),
-//                   ),
+//                   ElevatedButton(onPressed: openSubCategoryDialog, child: const Text("Add Subcategory")),
+//
+//
 //                   const SizedBox(height: 10),
-//                   ElevatedButton(
-//                     onPressed: openSubSubCategoryDialog,
-//                     child: const Text("Add Sub-Subcategory"),
-//                   ),
+//                   ElevatedButton(onPressed: openSubSubCategoryDialog, child: const Text("Add Sub-Subcategory")),
+//                   const SizedBox(height: 20),
+//                   // Button to Navigate to Category Management Page
+//
+//
 //                 ],
 //               ),
 //             ),
@@ -275,14 +306,41 @@
 //         ),
 //       ),
 //     );
-//
 //   }
 // }
+//
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import 'package:d_pharma_notes_admin/view/Add_data.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 
@@ -341,8 +399,13 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
 
   /// Add Category to Firebase
   Future<void> addCategory(String name, String image) async {
-    String categoryId = database.child("category").push().key!;
-    await database.child("category/$categoryId").set({"name": name, "image": image});
+    String? categoryId = database.child("category").push().key;
+    if (categoryId != null) {
+      await database.child("category/$categoryId").set({
+        "name": name,
+        "image": image,
+      });
+    }
   }
 
   /// Open Subcategory Dialog
@@ -366,12 +429,18 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
 
   /// Add Subcategory to Firebase
   Future<void> addSubCategory(String categoryId, String name, String image) async {
-    String subCategoryId = database.child("category/$categoryId/subcategory").push().key!;
-    await database.child("category/$categoryId/subcategory/$subCategoryId").set({"name": name, "image": image});
+    String? subCategoryId = database.child("category/$categoryId/subcategory").push().key;
+    if (subCategoryId != null) {
+      await database.child("category/$categoryId/subcategory/$subCategoryId").set({
+        "name": name,
+        "image": image,
+      });
+    }
   }
 
   /// Open Sub-Subcategory Dialog
   void openSubSubCategoryDialog() {
+    clearControllers();
     openDialog(
       title: "Add Sub-Subcategory",
       fields: [
@@ -394,32 +463,29 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
           Navigator.pop(context);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Please select a subcategory and fill all fields")),
+            const SnackBar(content: Text("Please select a subcategory and fill ")),
           );
         }
       },
     );
   }
-
   void clearControllers() {
     nameController.clear();
     imageController.clear();
     pdfLinkController.clear();
     descriptionController.clear();
-    setState(() {
-      selectedCategoryId = null;
-      selectedSubCategoryId = null;
-    });
   }
 
   /// Add Sub-Subcategory to Firebase
   Future<void> addSubSubCategory(String categoryId, String subCategoryId, String name, String pdfLink, String description) async {
-    String subSubCategoryId = database.child("category/$categoryId/subcategory/$subCategoryId/sub_subcategory").push().key!;
-    await database.child("category/$categoryId/subcategory/$subCategoryId/sub_subcategory/$subSubCategoryId").set({
-      "name": name,
-      "description": description,
-      "link": pdfLink,
-    });
+    String? subSubCategoryId = database.child("category/$categoryId/subcategory/$subCategoryId/sub_subcategory").push().key;
+    if (subSubCategoryId != null) {
+      await database.child("category/$categoryId/subcategory/$subCategoryId/sub_subcategory/$subSubCategoryId").set({
+        "name": name,
+        "description": description,
+        "link": pdfLink,
+      });
+    }
   }
 
   /// Build Category Dropdown
@@ -431,13 +497,24 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
           return const Text("No categories found");
         }
 
-        Map<dynamic, dynamic> categories = Map<dynamic, dynamic>.from(snapshot.data!.snapshot.value as Map<dynamic, dynamic>);
-        List<DropdownMenuItem<String>> categoryItems = categories.keys.map<DropdownMenuItem<String>>((categoryId) {
+        var data = snapshot.data!.snapshot.value as Map<dynamic, dynamic>? ?? {};
+
+        // Convert the map to a list of dropdown items
+        List<DropdownMenuItem<String>> categoryItems = data.keys.map<DropdownMenuItem<String>>((categoryId) {
           return DropdownMenuItem(
             value: categoryId,
-            child: Text(categories[categoryId]["name"]),
+            child: Text(data[categoryId]["name"] ?? "Unknown"),
           );
         }).toList();
+
+        // If the selected value is no longer valid, reset it
+        if (selectedCategoryId != null && !data.keys.contains(selectedCategoryId)) {
+          setState(() {
+            selectedCategoryId = null;
+          });
+        }
+
+
 
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -448,36 +525,118 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
               onChanged: (value) {
                 setDialogState(() {
                   selectedCategoryId = value;
-                  selectedSubCategoryId = null;
+                  selectedSubCategoryId = null; // Reset subcategory
                 });
+                setState(() {}); // Ensure entire UI updates
               },
             );
           },
         );
+
       },
     );
   }
 
+
+
   /// Build Subcategory Dropdown
+
+
+
+  // Widget buildSubCategoryDropdown() {
+  //   return StreamBuilder<DatabaseEvent>(
+  //     stream: database.child("category").onValue,
+  //     builder: (context, categorySnapshot) {
+  //       if (!categorySnapshot.hasData || categorySnapshot.data!.snapshot.value == null) {
+  //         return const Text("No categories found");
+  //       }
+  //
+  //       var categoryData = categorySnapshot.data!.snapshot.value as Map<dynamic, dynamic>? ?? {};
+  //       Map<String, String> allSubCategories = {};
+  //
+  //       // Iterate through each category to fetch subcategories
+  //       categoryData.forEach((categoryId, categoryValue) {
+  //         if (categoryValue["subcategory"] != null) {
+  //           (categoryValue["subcategory"] as Map<dynamic, dynamic>).forEach((subCategoryId, subCategoryValue) {
+  //             if (subCategoryValue["name"] != null && subCategoryValue["name"].toString().trim().isNotEmpty) {
+  //               allSubCategories[subCategoryId] = subCategoryValue["name"];
+  //             }
+  //           });
+  //         }
+  //       });
+  //
+  //       if (allSubCategories.isEmpty) {
+  //         return const Text("No subcategories found");
+  //       }
+  //
+  //       List<DropdownMenuItem<String>> subCategoryItems = allSubCategories.keys.map<DropdownMenuItem<String>>((subCategoryId) {
+  //         return DropdownMenuItem(
+  //           value: subCategoryId,
+  //           child: Text(allSubCategories[subCategoryId] ?? "Unknown"),
+  //         );
+  //       }).toList();
+  //
+  //       return StatefulBuilder(
+  //         builder: (context, setDialogState) {
+  //           return DropdownButtonFormField<String>(
+  //             value: selectedSubCategoryId,
+  //             hint: const Text("Select Subcategory"),
+  //             items: subCategoryItems,
+  //             onChanged: (value) {
+  //               setDialogState(() {
+  //                 selectedSubCategoryId = value;
+  //               });
+  //               setState(() {}); // Ensure entire UI updates
+  //             },
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
+
+
+
   Widget buildSubCategoryDropdown() {
     return StreamBuilder<DatabaseEvent>(
-      stream: selectedCategoryId == null
-          ? const Stream.empty()
-          : database.child("category/$selectedCategoryId/subcategory").onValue,
-      builder: (context, snapshot) {
-        if (selectedCategoryId == null) {
-          return const Text("Select category first");
+      stream: database.child("category").onValue,
+      builder: (context, categorySnapshot) {
+        if (!categorySnapshot.hasData || categorySnapshot.data!.snapshot.value == null) {
+          return const Text("No categories found");
         }
 
-        if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
-          return const Text("No subcategories found");
+        var categoryData = categorySnapshot.data!.snapshot.value as Map<dynamic, dynamic>? ?? {};
+        Map<String, String> allSubCategories = {};
+
+        // Ensure subcategories belong to the selected category
+        if (selectedCategoryId != null && categoryData[selectedCategoryId] != null) {
+          var selectedCategoryData = categoryData[selectedCategoryId];
+
+          if (selectedCategoryData["subcategory"] != null) {
+            (selectedCategoryData["subcategory"] as Map<dynamic, dynamic>).forEach((subCategoryId, subCategoryValue) {
+              if (subCategoryValue["name"] != null && subCategoryValue["name"].toString().trim().isNotEmpty) {
+                allSubCategories[subCategoryId] = subCategoryValue["name"];
+              }
+            });
+          }
         }
 
-        Map<dynamic, dynamic> subcategories = Map<dynamic, dynamic>.from(snapshot.data!.snapshot.value as Map<dynamic, dynamic>);
-        List<DropdownMenuItem<String>> subCategoryItems = subcategories.keys.map<DropdownMenuItem<String>>((subCategoryId) {
+        // If no subcategories exist for the selected category
+        if (allSubCategories.isEmpty) {
+          return const Text("No subcategories found for the selected category");
+        }
+
+        // If the previously selected subcategory is no longer valid, reset it
+        if (selectedSubCategoryId != null && !allSubCategories.containsKey(selectedSubCategoryId)) {
+          setState(() {
+            selectedSubCategoryId = null;
+          });
+        }
+
+        List<DropdownMenuItem<String>> subCategoryItems = allSubCategories.keys.map<DropdownMenuItem<String>>((subCategoryId) {
           return DropdownMenuItem(
             value: subCategoryId,
-            child: Text(subcategories[subCategoryId]["name"]),
+            child: Text(allSubCategories[subCategoryId] ?? "Unknown"),
           );
         }).toList();
 
@@ -491,6 +650,7 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
                 setDialogState(() {
                   selectedSubCategoryId = value;
                 });
+                setState(() {}); // Ensure entire UI updates
               },
             );
           },
@@ -499,15 +659,21 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
     );
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Manage Categories")),
+      appBar: AppBar(title: Text("Manage Categories"),
+      backgroundColor: Colors.blueGrey,
+      centerTitle: true,),
+
       body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Center(
           child: Card(
             elevation: 3,
+            //color: Colors.blueGrey,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -532,9 +698,23 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
                     child: const Text("Add Category"),
                   ),
                   const SizedBox(height: 10),
-                  ElevatedButton(onPressed: openSubCategoryDialog, child: const Text("Add Subcategory")),
+                   ElevatedButton(onPressed: openSubCategoryDialog, child: const Text("Add Subcategory")),
+
+
                   const SizedBox(height: 10),
                   ElevatedButton(onPressed: openSubSubCategoryDialog, child: const Text("Add Sub-Subcategory")),
+                  const SizedBox(height: 20),
+                  // Button to Navigate to Category Management Page
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => CategoryManagementPage()),
+                      );
+                    },
+                    child: const Text("ShowData"),
+                  ),
+
                 ],
               ),
             ),
@@ -544,3 +724,35 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
