@@ -356,6 +356,7 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
   TextEditingController imageController = TextEditingController();
   TextEditingController pdfLinkController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
+  TextEditingController LinkController = TextEditingController();
 
   String? selectedCategoryId;
   String? selectedSubCategoryId;
@@ -370,6 +371,7 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
     imageController.clear();
     pdfLinkController.clear();
     descriptionController.clear();
+    LinkController.clear();
 
     showDialog(
       context: context,
@@ -449,6 +451,7 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
         TextField(controller: nameController, decoration: const InputDecoration(labelText: "Enter Name")),
         TextField(controller: descriptionController, decoration: const InputDecoration(labelText: "Enter Description")),
         TextField(controller: pdfLinkController, decoration: const InputDecoration(labelText: "Enter PDF Link")),
+        TextField(controller: LinkController, decoration: const InputDecoration(labelText: "Enter Link")),
       ],
       onSubmit: () {
         if (selectedCategoryId != null && selectedSubCategoryId != null && nameController.text.isNotEmpty) {
@@ -458,6 +461,7 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
             nameController.text,
             pdfLinkController.text,
             descriptionController.text,
+            LinkController.text,
           );
           clearControllers();
           Navigator.pop(context);
@@ -474,16 +478,18 @@ class _DynamicDataPageState extends State<DynamicDataPage> {
     imageController.clear();
     pdfLinkController.clear();
     descriptionController.clear();
+    LinkController.clear();
   }
 
   /// Add Sub-Subcategory to Firebase
-  Future<void> addSubSubCategory(String categoryId, String subCategoryId, String name, String pdfLink, String description) async {
+  Future<void> addSubSubCategory(String categoryId, String subCategoryId, String name, String pdfLink, String description, String link) async {
     String? subSubCategoryId = database.child("category/$categoryId/subcategory/$subCategoryId/sub_subcategory").push().key;
     if (subSubCategoryId != null) {
       await database.child("category/$categoryId/subcategory/$subCategoryId/sub_subcategory/$subSubCategoryId").set({
         "name": name,
         "description": description,
         "link": pdfLink,
+        "url": link
       });
     }
   }
